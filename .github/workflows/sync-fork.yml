@@ -1,0 +1,42 @@
+# Mirror upstream main into this fork so it stays current.
+# Runs nightly plus via manual dispatch. Pushes main back to this fork.
+# GITHUB_TOKEN can self-push because it operates on the repo it hosts in.
+name: sync-fork
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+concurrency:
+  group: sync-fork
+  cancel-in-flight: false
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this fork
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Configure git identity
+        run: |
+          git config user.email "${{ secrets.CHANGE_USER_EMAIL || 'actions-merge@github.com' }}"
+          git config user.name "${{ secrets.CHANGE_USER_NAME || 'github-actions[bot]' }}"
+      - name: Fetch upstream main
+        run: |
+          git remote add upstream https://github.com/earendil-works/pi.git || true
+          git fetch origin -q main
+          git fetch upstream -q main
+      - name: Update main from upstream
+        run: |
+          set -e
+          git checkout -q -B main
+          # Prefer a clean fast-forward; fall back to a squash merge when
+          # upstream main has moved past this fork's main with no clean ff.
+          git merge -q --ff-only upstream/main \
+            || git merge -q --squash upstream/main
+      - name: Push main to this fork
+        run: |
+          git push origin main
