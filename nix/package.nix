@@ -6,7 +6,7 @@
   lib,
   libxcb,
   makeWrapper,
-  nodejs_22,
+  pkgs,
   ripgrep,
   source,
   stdenv,
@@ -15,7 +15,7 @@
 }:
 
 let
-  nodejs = nodejs_22;
+  nodejs = pkgs.nodejs;
   packageJson = lib.importJSON (source + "/packages/coding-agent/package.json");
   # Lockfile root used by the pi.dev installer. It pins the coding agent's
   # runtime dependency tree and is kept in sync with package-lock.json by
@@ -106,7 +106,10 @@ stdenv.mkDerivation {
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
 
-  buildInputs = [ nodejs ] ++ lib.optionals stdenv.hostPlatform.isLinux [
+  buildInputs = [
+    nodejs
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isLinux [
     stdenv.cc.cc.lib
     libxcb
   ];
